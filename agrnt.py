@@ -1,9 +1,45 @@
 from together import Together
 import json
+import datetime
+import requests
 
 
-def get_weather(location:str):
-    return f"the weather in {location} is good"
+def get_weather(location: str):
+    open_weather_api_key = "56790bf75f7f78cc009b8f461daa6358"
+    url = f"https://api.openweathermap.org/data/2.5/forecast?q={location}&appid={open_weather_api_key}&units=metric"
+    try:
+        data = requests.get(url, timeout=30).json()
+        forecasts = []
+
+        for entry in data.get("list", []):
+            dt = datetime.datetime.fromtimestamp(entry["dt"]).date()
+            if dt == datetime.datetime.today().date():
+                forecasts.append({
+                    "timestamp": entry["dt"],
+                    "date": dt.isoformat(),
+                    "weather": entry["weather"][0]["description"],
+                    "temperature": entry["main"]["temp"],
+                    "feels_like": entry["main"]["feels_like"],
+                    "humidity": entry["main"]["humidity"],
+                    "wind_speed": entry["wind"]["speed"],
+                    "pressure": entry["main"]["pressure"]
+                })
+            else:
+                break
+
+        return {
+            "location": location,
+            "forecasts": forecasts,
+            "status": "success" if forecasts else "no data available"
+        }
+    except Exception as e:
+        return {
+            "location": location,
+            "forecasts": [],
+            "status": "error",
+            "error_message": str(e)
+        }
+
 
 def get_response():
     client = Together(api_key="1aff76ce049d22e115f4b8c7eedabcc6bc5e7d082cbbaeb1bbca72f907971234")
@@ -50,4 +86,5 @@ def call_function(response):
         print(result)
 
 
-
+response = get_response()
+call_function(response)
