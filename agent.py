@@ -80,10 +80,12 @@ class SmartAgent:
         except Exception as e:
             return f"Error executing {function_name}: {str(e)}"
 
+
     def consult_llm(self, messages: List[Dict[str, str]],
                     tools: Optional[List[Dict[str, Any]]] = None) -> ChatCompletionMessage | None | \
                                                                      dict[
                                                                          str, str]:
+
         """Consult the LLM with proper error handling"""
         try:
             response = self.client.chat.completions.create(
