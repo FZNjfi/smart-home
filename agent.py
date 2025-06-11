@@ -80,7 +80,8 @@ class SmartAgent:
         except Exception as e:
             return f"Error executing {function_name}: {str(e)}"
 
-    def consult_llm(self, messages: List[Dict[str, str]],tools: Optional[List[Dict[str, Any]]] = None) -> ChatCompletionMessage | None | \
+    def consult_llm(self, messages: List[Dict[str, str]],
+                    tools: Optional[List[Dict[str, Any]]] = None) -> ChatCompletionMessage | None | \
                                                                      dict[
                                                                          str, str]:
         """Consult the LLM with proper error handling"""
@@ -100,7 +101,8 @@ class SmartAgent:
         """Get optimal response with max 5 LLM consultations"""
         response = None
         messages = [
-            {"role": "system", "content": "Use tools when needed. Provide concise answers. you should use tools when necessary. you can use two or more tools."},
+            {"role": "system",
+             "content": "Use tools when needed. Provide concise answers. you should use tools when necessary. you can use two or more tools."},
             {"role": "user", "content": user_query}
         ]
 
@@ -176,11 +178,10 @@ if __name__ == "__main__":
 
     # Test case 2: News query
     print("\n=== News Test ===")
-    response=agent.get_refined_response("What's the news in Tehran today?")
+    response = agent.get_refined_response("What's the news in Tehran today?")
     print(agent.call_function(response))
 
     # # Test case 3: Combined query
     print("\n=== Combined Test ===")
     response = agent.get_refined_response("Tell me about both weather and news in Isfahan")
     print(agent.call_function(response))
-
