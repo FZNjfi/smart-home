@@ -48,8 +48,8 @@ def get_response():
         model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
         messages=[
 
-            {"role": "system", "content": "Only call a function if absolutely necessary."},
-            {"role": "user", "content": "is Isfahan today sunny"}
+            {"role": "system", "content": "Use functions when needed. Provide concise answers."},
+            {"role": "user", "content": "what ia llm"}
 
         ],
         tools=[
