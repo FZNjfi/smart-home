@@ -146,25 +146,60 @@ class SmartAgent:
 
     def call_function(self, response):
         message = response.choices[0].message
+
         if not message.tool_calls:
             return message.content
 
-        # Process function calls
+        weather_data, news_data = None, None
         for tool_call in message.tool_calls:
             function_name = tool_call.function.name
             function_args = json.loads(tool_call.function.arguments)
+            result = self.functions[function_name](**function_args)
 
-            # Execute function
-            function_response = self.functions[function_name](**function_args)
+            if function_name == "get_weather":
+                weather_data = result
+            elif function_name == "get_news":
+                news_data = result
 
-            # Add to conversation
-            messages.append({
-                "role": "tool",
-                "name": function_name,
-                "content": function_response,
-                "tool_call_id": tool_call.id
-            })
-        return message
+        markdown_parts = []
+        if weather_data:
+            markdown_parts.append(self.format_weather_markdown(weather_data))
+        if news_data:
+            markdown_parts.append(self.format_news_markdown(news_data))
+
+        return "\n\n---\n\n".join(markdown_parts)
+
+    def format_weather_markdown(self, weather_data: dict) -> str:
+        if weather_data["status"] != "success":
+            return f"## 🌤️ وضعیت آب‌وهوا\n\n❗ اطلاعاتی در دسترس نیست برای **{weather_data['location']}**."
+
+        forecast = weather_data["forecasts"][0] if weather_data["forecasts"] else None
+        if not forecast:
+            return f"## 🌤️ وضعیت آب‌وهوا\n\n❗ اطلاعاتی در دسترس نیست برای **{weather_data['location']}**."
+
+        return (
+            f"## 🌤️ وضعیت آب‌وهوا در {weather_data['location'].title()}\n\n"
+            f"**تاریخ:** {forecast['date']}\n"
+            f"**دما:** {forecast['temperature']}°C\n"
+            f"**احساس واقعی:** {forecast['feels_like']}°C\n"
+            f"**رطوبت:** {forecast['humidity']}%\n"
+            f"**وضعیت:** {forecast['weather']}\n"
+            f"**سرعت باد:** {forecast['wind_speed']} m/s\n"
+            f"**فشار هوا:** {forecast['pressure']} hPa\n"
+        )
+
+    def format_news_markdown(self, news_data: str) -> str:
+        news_md = "## 📰 اخبار امروز\n\n"
+        if not news_data or "Request failed" in news_data:
+            news_md += "❗ خبری در دسترس نیست."
+        else:
+            lines = news_data.strip().split("\n")
+            for line in lines:
+                news_md += f"{line}\n"
+
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        news_md += f"\n**📅 بروزرسانی:** {now}"
+        return news_md
 
 
 # Example usage
