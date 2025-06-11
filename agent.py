@@ -45,7 +45,7 @@ class SmartAgent:
             return self.functions[function_name](**parameters)
         except Exception as e:
             return f"Error executing {function_name}: {str(e)}"
-
+          
     def consult_llm(self, messages: List[Dict[str, str]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[
         str, Any]:
         """Consult the LLM with proper error handling"""
