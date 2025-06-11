@@ -1,8 +1,9 @@
 import json
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Iterator
 
 import requests
 from together import Together
+from together.types import ChatCompletionResponse, ChatCompletionChunk
 from together.types.chat_completions import ChatCompletionMessage
 
 
@@ -79,8 +80,7 @@ class SmartAgent:
         except Exception as e:
             return f"Error executing {function_name}: {str(e)}"
 
-    def consult_llm(self, messages: List[Dict[str, str]],
-                    tools: Optional[List[Dict[str, Any]]] = None) -> ChatCompletionMessage | None | \
+    def consult_llm(self, messages: List[Dict[str, str]],tools: Optional[List[Dict[str, Any]]] = None) -> ChatCompletionMessage | None | \
                                                                      dict[
                                                                          str, str]:
         """Consult the LLM with proper error handling"""
@@ -96,11 +96,11 @@ class SmartAgent:
             print(f"Error consulting LLM: {str(e)}")
             return {"content": "I encountered an error processing your request."}
 
-    def get_refined_response(self, user_query: str) -> str:
+    def get_refined_response(self, user_query: str) -> None | ChatCompletionResponse | Iterator[ChatCompletionChunk]:
         """Get optimal response with max 5 LLM consultations"""
-        response=None
+        response = None
         messages = [
-            {"role": "system", "content": "Use functions when needed. Provide concise answers."},
+            {"role": "system", "content": "Use tools when needed. Provide concise answers. you should use tools when necessary. you can use two or more tools."},
             {"role": "user", "content": user_query}
         ]
 
@@ -109,7 +109,7 @@ class SmartAgent:
                 "type": "function",
                 "function": {
                     "name": "get_weather",
-                    "description": "Get current weather for a location",
+                    "description": "Call this function ONLY if the user is asking about weather in a specific city or country.",
                     "parameters": {
                         "type": "object",
                         "properties": {"location": {"type": "string"}},
@@ -121,7 +121,7 @@ class SmartAgent:
                 "type": "function",
                 "function": {
                     "name": "get_news",
-                    "description": "Get news headlines for a location",
+                    "description": "Call this function ONLY if the user is asking about news in a specific city or country.",
                     "parameters": {
                         "type": "object",
                         "properties": {"location": {"type": "string"}},
@@ -137,7 +137,7 @@ class SmartAgent:
                 messages=messages,
                 tools=tools,
                 tool_choice="auto",
-                temperature=0.1  # Lower temperature for more deterministic function calls
+                temperature=0.1
             )
 
         return response
@@ -162,6 +162,7 @@ class SmartAgent:
                 "content": function_response,
                 "tool_call_id": tool_call.id
             })
+        return message
 
 
 # Example usage
@@ -169,15 +170,17 @@ if __name__ == "__main__":
     agent = SmartAgent()
 
     # # Test case 1: Weather query
-    # print("=== Weather Test ===")
-    # weather_answer = agent.get_optimal_response("What's the weather like in Isfahan today?")
-    # print(weather_answer)
+    print("\n=== Weather Test ===")
+    response = agent.get_refined_response("What's the weather like in Isfahan today?")
+    print(agent.call_function(response))
 
     # Test case 2: News query
     print("\n=== News Test ===")
-    print(agent.get_refined_response("What's the news in Tehran today?"))
+    response=agent.get_refined_response("What's the news in Tehran today?")
+    print(agent.call_function(response))
 
     # # Test case 3: Combined query
-    # print("\n=== Combined Test ===")
-    # combined_answer = agent.get_optimal_response("Tell me about both weather and news in Isfahan")
-    # print(combined_answer)
+    print("\n=== Combined Test ===")
+    response = agent.get_refined_response("Tell me about both weather and news in Isfahan")
+    print(agent.call_function(response))
+
