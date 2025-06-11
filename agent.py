@@ -3,6 +3,7 @@ from typing import Dict, Any, List, Optional
 
 import requests
 from together import Together
+from together.types.chat_completions import ChatCompletionMessage
 
 
 class SmartAgent:
@@ -16,10 +17,42 @@ class SmartAgent:
         }
 
     def get_weather(self, location: str):
-        return f"the weather in {location} is good"
+        open_weather_api_key = "56790bf75f7f78cc009b8f461daa6358"
+        url = f"https://api.openweathermap.org/data/2.5/forecast?q={location}&appid={open_weather_api_key}&units=metric"
+        try:
+            data = requests.get(url, timeout=30).json()
+            forecasts = []
+
+            for entry in data.get("list", []):
+                dt = datetime.datetime.fromtimestamp(entry["dt"]).date()
+                if dt == datetime.datetime.today().date():
+                    forecasts.append({
+                        "timestamp": entry["dt"],
+                        "date": dt.isoformat(),
+                        "weather": entry["weather"][0]["description"],
+                        "temperature": entry["main"]["temp"],
+                        "feels_like": entry["main"]["feels_like"],
+                        "humidity": entry["main"]["humidity"],
+                        "wind_speed": entry["wind"]["speed"],
+                        "pressure": entry["main"]["pressure"]
+                    })
+                else:
+                    break
+
+            return {
+                "location": location,
+                "forecasts": forecasts,
+                "status": "success" if forecasts else "no data available"
+            }
+        except Exception as e:
+            return {
+                "location": location,
+                "forecasts": [],
+                "status": "error",
+                "error_message": str(e)
+            }
 
     def get_news(self, location: str) -> str:
-        # 17fa3ca9e3f84f188474b560074d487d
         url = "https://newsapi.org/v2/top-headlines"
         params = {
             "country": location,
@@ -46,8 +79,10 @@ class SmartAgent:
         except Exception as e:
             return f"Error executing {function_name}: {str(e)}"
 
-    def consult_llm(self, messages: List[Dict[str, str]], tools: Optional[List[Dict[str, Any]]] = None) -> Dict[
-        str, Any]:
+    def consult_llm(self, messages: List[Dict[str, str]],
+                    tools: Optional[List[Dict[str, Any]]] = None) -> ChatCompletionMessage | None | \
+                                                                     dict[
+                                                                         str, str]:
         """Consult the LLM with proper error handling"""
         try:
             response = self.client.chat.completions.create(
@@ -63,6 +98,7 @@ class SmartAgent:
 
     def get_refined_response(self, user_query: str) -> str:
         """Get optimal response with max 5 LLM consultations"""
+        response=None
         messages = [
             {"role": "system", "content": "Use functions when needed. Provide concise answers."},
             {"role": "user", "content": user_query}
@@ -104,36 +140,28 @@ class SmartAgent:
                 temperature=0.1  # Lower temperature for more deterministic function calls
             )
 
-            message = response.choices[0].message
-            if not message.tool_calls:
-                return message.content
+        return response
 
-            # Process function calls
-            for tool_call in message.tool_calls:
-                function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments)
+    def call_function(self, response):
+        message = response.choices[0].message
+        if not message.tool_calls:
+            return message.content
 
-                # Execute function
-                function_response = self.functions[function_name](**function_args)
+        # Process function calls
+        for tool_call in message.tool_calls:
+            function_name = tool_call.function.name
+            function_args = json.loads(tool_call.function.arguments)
 
-                # Add to conversation
-                messages.append({
-                    "role": "tool",
-                    "name": function_name,
-                    "content": function_response,
-                    "tool_call_id": tool_call.id
-                })
-        return "I've completed my analysis."
+            # Execute function
+            function_response = self.functions[function_name](**function_args)
 
-def call_function(response):
-    message = response.choices[0].message
-    print(message)
-    if message.tool_calls:
-        function_name = message.tool_calls[0].function.name
-        arguments = message.tool_calls[0].function.arguments
-        parsed_args = json.loads(arguments)
-        result = globals()[function_name](**parsed_args)
-        print(result)
+            # Add to conversation
+            messages.append({
+                "role": "tool",
+                "name": function_name,
+                "content": function_response,
+                "tool_call_id": tool_call.id
+            })
 
 
 # Example usage
