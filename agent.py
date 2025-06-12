@@ -1,12 +1,12 @@
 import json
 from typing import Dict, Any, List, Optional, Iterator
 import datetime
+import mark_downs
 import requests
 from together import Together
 from together.types import ChatCompletionResponse, ChatCompletionChunk
 from together.types.chat_completions import ChatCompletionMessage
 
-#test
 
 class SmartAgent:
     def __init__(self):
@@ -17,6 +17,19 @@ class SmartAgent:
             "get_weather": self.get_weather,
             "get_news": self.get_news
         }
+        self.house_structure = {
+            "Living Room": ["TV"],
+            "Bathroom": ["lamp"],
+            "Kitchen": ["lamp", "air conditioner"],
+            "Room 1": ["lamp", "air conditioner"],
+            "Room2": ["lamp"]
+        }
+
+    def get_house_description(self) -> str:
+        lines = ["This house has the following rooms and devices:"]
+        for room, devices in self.house_structure.items():
+            lines.append(f"- {room}: {', '.join(devices)}")
+        return "\n".join(lines)
 
     def get_weather(self, location: str):
         open_weather_api_key = "56790bf75f7f78cc009b8f461daa6358"
@@ -72,6 +85,16 @@ class SmartAgent:
 
         return f"the weather in {location} is good"
 
+    def control_device(self, devices: List[Dict[str, str]]) -> str:
+        result = []
+        for entry in devices:
+            device = entry.get("device")
+            action = entry.get("action")
+            room = entry.get("room", "نامشخص")
+            if device and action:
+                result.append(f"🔌 دستگاه **{device}** در اتاق **{room}** به حالت **{action.upper()}** تنظیم شد.")
+        return "\n".join(result) if result else "هیچ دستگاهی تنظیم نشد."
+
     def execute_function(self, function_name: str, parameters: Dict[str, Any]) -> str:
         """Execute the specified function"""
         if function_name not in self.functions:
@@ -82,9 +105,7 @@ class SmartAgent:
             return f"Error executing {function_name}: {str(e)}"
 
     def consult_llm(self, messages: List[Dict[str, str]],
-                    tools: Optional[List[Dict[str, Any]]] = None) -> ChatCompletionMessage | None | \
-                                                                     dict[
-                                                                         str, str]:
+                    tools: Optional[List[Dict[str, Any]]] = None):
         """Consult the LLM with proper error handling"""
         try:
             response = self.client.chat.completions.create(
@@ -101,9 +122,17 @@ class SmartAgent:
     def get_refined_response(self, user_query: str) -> None | ChatCompletionResponse | Iterator[ChatCompletionChunk]:
         """Get optimal response with max 5 LLM consultations"""
         response = None
+        house_info = self.get_house_description()
         messages = [
-            {"role": "system",
-             "content": "Use tools when needed. Provide concise answers. you should use tools when necessary. you can use two or more tools."},
+            {
+                "role": "system",
+                "content": (
+                    f"You are a smart home assistant. Use tools when needed. "
+                    f"You can call multiple tools if required.\n\n"
+                    f"{house_info}\n\n"
+                    f"Each device can be turned 'on' or 'off'."
+                )
+            },
             {"role": "user", "content": user_query}
         ]
 
@@ -131,7 +160,32 @@ class SmartAgent:
                         "required": ["location"]
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "control_device",
+                    "description": "Use this to turn devices on or off, for multiple devices at once.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "devices": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "device": {"type": "string"},
+                                        "action": {"type": "string", "enum": ["on", "off"]}
+                                    },
+                                    "required": ["device", "action"]
+                                }
+                            }
+                        },
+                        "required": ["devices"]
+                    }
+                }
             }
+
         ]
 
         for _ in range(self.max_iterations):
@@ -164,43 +218,11 @@ class SmartAgent:
 
         markdown_parts = []
         if weather_data:
-            markdown_parts.append(self.format_weather_markdown(weather_data))
+            markdown_parts.append(mark_downs.format_weather_markdown(weather_data))
         if news_data:
-            markdown_parts.append(self.format_news_markdown(news_data))
+            markdown_parts.append(mark_downs.format_news_markdown(news_data))
 
         return "\n\n---\n\n".join(markdown_parts)
-
-    def format_weather_markdown(self, weather_data: dict) -> str:
-        if weather_data["status"] != "success":
-            return f"## 🌤️ وضعیت آب‌وهوا\n\n❗ اطلاعاتی در دسترس نیست برای **{weather_data['location']}**."
-
-        forecast = weather_data["forecasts"][0] if weather_data["forecasts"] else None
-        if not forecast:
-            return f"## 🌤️ وضعیت آب‌وهوا\n\n❗ اطلاعاتی در دسترس نیست برای **{weather_data['location']}**."
-
-        return (
-            f"## 🌤️ وضعیت آب‌وهوا در {weather_data['location'].title()}\n\n"
-            f"**تاریخ:** {forecast['date']}\n"
-            f"**دما:** {forecast['temperature']}°C\n"
-            f"**احساس واقعی:** {forecast['feels_like']}°C\n"
-            f"**رطوبت:** {forecast['humidity']}%\n"
-            f"**وضعیت:** {forecast['weather']}\n"
-            f"**سرعت باد:** {forecast['wind_speed']} m/s\n"
-            f"**فشار هوا:** {forecast['pressure']} hPa\n"
-        )
-
-    def format_news_markdown(self, news_data: str) -> str:
-        news_md = "## 📰 اخبار امروز\n\n"
-        if not news_data or "Request failed" in news_data:
-            news_md += "❗ خبری در دسترس نیست."
-        else:
-            lines = news_data.strip().split("\n")
-            for line in lines:
-                news_md += f"{line}\n"
-
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        news_md += f"\n**📅 بروزرسانی:** {now}"
-        return news_md
 
 
 # Example usage
@@ -209,7 +231,7 @@ if __name__ == "__main__":
 
     # # Test case 1: Weather query
     print("\n=== Weather Test ===")
-    response = agent.get_refined_response("What's the weather like in Isfahan today?")
+    response = agent.get_refined_response("من رسیدم")
     print(agent.call_function(response))
 
     # Test case 2: News query
