@@ -11,7 +11,7 @@ from together.types.chat_completions import ChatCompletionMessage
 class SmartAgent:
     def __init__(self):
         self.client = Together(api_key="1aff76ce049d22e115f4b8c7eedabcc6bc5e7d082cbbaeb1bbca72f907971234")
-        self.max_iterations = 1  # Max LLM interactions after function call
+        self.max_iterations = 2
         self.max_llm_queries = 5
         self.functions = {
             "get_weather": self.get_weather,
