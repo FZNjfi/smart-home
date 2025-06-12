@@ -7,6 +7,7 @@ from together.types import ChatCompletionResponse, ChatCompletionChunk
 from together.types.chat_completions import ChatCompletionMessage
 
 
+
 class SmartAgent:
     def __init__(self):
         self.client = Together(api_key="1aff76ce049d22e115f4b8c7eedabcc6bc5e7d082cbbaeb1bbca72f907971234")
