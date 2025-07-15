@@ -1,3 +1,6 @@
+import datetime
+
+
 def format_weather_Fa(weather_data: dict) -> str:
     if weather_data["status"] != "success":
         return f"## 🌤️ وضعیت آب‌وهوا\n\n❗ اطلاعاتی در دسترس نیست برای **{weather_data['location']}**."

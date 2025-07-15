@@ -3,6 +3,7 @@ from typing import Dict, Any, List, Optional, Iterator
 import datetime
 import mark_downs
 import requests
+import tools_API
 from together import Together
 from together.types import ChatCompletionResponse, ChatCompletionChunk
 from together.types.chat_completions import ChatCompletionMessage
@@ -14,8 +15,9 @@ class SmartAgent:
         self.max_iterations = 2
         self.max_llm_queries = 5
         self.functions = {
-            "get_weather": self.get_weather,
-            "get_news": self.get_news
+            "get_weather": tools_API.get_weather,
+            "get_news": tools_API.get_news,
+            "control_device": tools_API.control_device
         }
         self.house_structure = {
             "Living Room": ["TV"],
@@ -30,70 +32,6 @@ class SmartAgent:
         for room, devices in self.house_structure.items():
             lines.append(f"- {room}: {', '.join(devices)}")
         return "\n".join(lines)
-
-    def get_weather(self, location: str):
-        open_weather_api_key = "56790bf75f7f78cc009b8f461daa6358"
-        url = f"https://api.openweathermap.org/data/2.5/forecast?q={location}&appid={open_weather_api_key}&units=metric"
-        try:
-            data = requests.get(url, timeout=30).json()
-            forecasts = []
-
-            for entry in data.get("list", []):
-                dt = datetime.datetime.fromtimestamp(entry["dt"]).date()
-                if dt == datetime.datetime.today().date():
-                    forecasts.append({
-                        "timestamp": entry["dt"],
-                        "date": dt.isoformat(),
-                        "weather": entry["weather"][0]["description"],
-                        "temperature": entry["main"]["temp"],
-                        "feels_like": entry["main"]["feels_like"],
-                        "humidity": entry["main"]["humidity"],
-                        "wind_speed": entry["wind"]["speed"],
-                        "pressure": entry["main"]["pressure"]
-                    })
-                else:
-                    break
-
-            return {
-                "location": location,
-                "forecasts": forecasts,
-                "status": "success" if forecasts else "no data available"
-            }
-        except Exception as e:
-            return {
-                "location": location,
-                "forecasts": [],
-                "status": "error",
-                "error_message": str(e)
-            }
-
-    def get_news(self, location: str) -> str:
-        url = "https://newsapi.org/v2/top-headlines"
-        params = {
-            "country": location,
-            "apiKey": "17fa3ca9e3f84f188474b560074d487d"
-        }
-        response = requests.get(url, params=params)
-
-        # Check for success
-        if response.status_code == 200:
-            articles = response.json().get("articles", [])
-            summaries = [f"{i + 1}. {a['title']}" for i, a in enumerate(articles[:5])]
-            return "\n".join(summaries)
-        else:
-            print(f"Request failed with status code {response.status_code}")
-
-        return f"the weather in {location} is good"
-
-    def control_device(self, devices: List[Dict[str, str]]) -> str:
-        result = []
-        for entry in devices:
-            device = entry.get("device")
-            action = entry.get("action")
-            room = entry.get("room", "نامشخص")
-            if device and action:
-                result.append(f"🔌 دستگاه **{device}** در اتاق **{room}** به حالت **{action.upper()}** تنظیم شد.")
-        return "\n".join(result) if result else "هیچ دستگاهی تنظیم نشد."
 
     def execute_function(self, function_name: str, parameters: Dict[str, Any]) -> str:
         """Execute the specified function"""
@@ -190,7 +128,7 @@ class SmartAgent:
 
         for _ in range(self.max_iterations):
             response = self.client.chat.completions.create(
-                model="meta-llama/Llama-3-70b-chat-hf",
+                model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
                 messages=messages,
                 tools=tools,
                 tool_choice="auto",
@@ -205,7 +143,7 @@ class SmartAgent:
         if not message.tool_calls:
             return message.content
 
-        weather_data, news_data = None, None
+        weather_data, news_data, control_device = None, None, None
         for tool_call in message.tool_calls:
             function_name = tool_call.function.name
             function_args = json.loads(tool_call.function.arguments)
@@ -215,12 +153,16 @@ class SmartAgent:
                 weather_data = result
             elif function_name == "get_news":
                 news_data = result
+            elif function_name == "control_device":
+                control_device = result
 
         markdown_parts = []
         if weather_data:
-            markdown_parts.append(mark_downs.format_weather_markdown(weather_data))
+            markdown_parts.append(mark_downs.format_weather_En(weather_data))
         if news_data:
-            markdown_parts.append(mark_downs.format_news_markdown(news_data))
+            markdown_parts.append(mark_downs.format_news_En(news_data))
+        if control_device:
+            markdown_parts.append(control_device)
 
         return "\n\n---\n\n".join(markdown_parts)
 
@@ -231,12 +173,12 @@ if __name__ == "__main__":
 
     # # Test case 1: Weather query
     print("\n=== Weather Test ===")
-    response = agent.get_refined_response("من رسیدم")
+    response = agent.get_refined_response("turn on thr lights")
     print(agent.call_function(response))
 
     # Test case 2: News query
     print("\n=== News Test ===")
-    response = agent.get_refined_response("What's the news in Tehran today?")
+    response = agent.get_refined_response("What's the whether in Isfahan?")
     print(agent.call_function(response))
 
     # # Test case 3: Combined query
