@@ -9,21 +9,22 @@ def get_weather(location: str):
     try:
         data = requests.get(url, timeout=30).json()
         forecasts = []
-
+        today = datetime.datetime.today().date()
         for entry in data.get("list", []):
             dt = datetime.datetime.fromtimestamp(entry["dt"]).date()
-            if dt == datetime.datetime.today().date():
-                forecasts.append({
-                    "timestamp": entry["dt"],
-                    "date": dt.isoformat(),
-                    "weather": entry["weather"][0]["description"],
-                    "temperature": entry["main"]["temp"],
-                    "feels_like": entry["main"]["feels_like"],
-                    "humidity": entry["main"]["humidity"],
-                    "wind_speed": entry["wind"]["speed"],
-                    "pressure": entry["main"]["pressure"]
-                })
-            else:
+            if dt < today:
+                continue
+            forecasts.append({
+                "timestamp": entry["dt"],
+                "date": dt.isoformat(),
+                "weather": entry["weather"][0]["description"],
+                "temperature": entry["main"]["temp"],
+                "feels_like": entry["main"]["feels_like"],
+                "humidity": entry["main"]["humidity"],
+                "wind_speed": entry["wind"]["speed"],
+                "pressure": entry["main"]["pressure"]
+            })
+            if len(forecasts) >= 3:
                 break
 
         return {

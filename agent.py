@@ -12,7 +12,7 @@ from together.types.chat_completions import ChatCompletionMessage
 class SmartAgent:
     def __init__(self):
         self.client = Together(api_key="1aff76ce049d22e115f4b8c7eedabcc6bc5e7d082cbbaeb1bbca72f907971234")
-        self.max_iterations = 3
+        self.max_iterations = 2
         self.max_llm_queries = 5
         self.functions = {
             "get_weather": tools_API.get_weather,
@@ -113,18 +113,18 @@ class SmartAgent:
                 for tool_call in message.tool_calls:
                     args = json.loads(tool_call.function.arguments)
                     result = self.functions[tool_call.function.name](**args)
-                    content = self.call_mark_down(result, tool_call.function.name)
 
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
-                        "content": content
+                        "content": json.dumps(result)
                     })
-                continue
-            else:
-                return message.content
-
-        return "Reached max iterations with no final content."
+        final_response = self.client.chat.completions.create(
+            model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+            messages=messages,
+            temperature=0.1
+        )
+        return final_response.choices[0].message.content
 
     def call_mark_down(self, result, function_name):
         markdown=''
@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
     # # Test case 1: Weather query
     print("\n=== Weather Test ===")
-    response = agent.agent_loop("Tell me about both weather and news in Isfahan")
+    response = agent.agent_loop("Tell me about both weather Isfahan")
     print(response)
 
     # Test case 2: News query
