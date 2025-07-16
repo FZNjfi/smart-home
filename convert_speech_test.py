@@ -3,6 +3,7 @@ import numpy as np
 import webrtcvad
 import scipy.io.wavfile as wav
 import queue
+import whisper
 
 class Speech:
     def __init__(self, sample_rate=16000, frame_duration=30, sensitivity_level=2, max_silent_chunks=20):
@@ -12,6 +13,7 @@ class Speech:
         self.vad = webrtcvad.Vad(sensitivity_level)
         self.max_silent_chunks=max_silent_chunks
         self.audio_queue = queue.Queue()
+        self.speech_to_text_model = whisper.load_model("medium")
 
     def audio_record(self):
         recorded_frames = []
@@ -40,6 +42,10 @@ class Speech:
     def audio_callback(self, indata, frames, time, status):
         self.audio_queue.put(indata.copy())
 
+    def convert_speech_to_text(self):
+        result = self.speech_to_text_model.transcribe("speech/output.wav")
+        print(result["text"])
 
 speech=Speech()
 speech.audio_record()
+speech.convert_speech_to_text()
