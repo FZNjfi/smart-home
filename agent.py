@@ -12,7 +12,7 @@ from together.types.chat_completions import ChatCompletionMessage
 class SmartAgent:
     def __init__(self):
         self.client = Together(api_key="1aff76ce049d22e115f4b8c7eedabcc6bc5e7d082cbbaeb1bbca72f907971234")
-        self.max_iterations = 2
+        self.max_iterations = 3
         self.max_llm_queries = 5
         self.functions = {
             "get_weather": tools_API.get_weather,
@@ -33,33 +33,7 @@ class SmartAgent:
             lines.append(f"- {room}: {', '.join(devices)}")
         return "\n".join(lines)
 
-    def execute_function(self, function_name: str, parameters: Dict[str, Any]) -> str:
-        """Execute the specified function"""
-        if function_name not in self.functions:
-            return f"Error: Unknown function {function_name}"
-        try:
-            return self.functions[function_name](**parameters)
-        except Exception as e:
-            return f"Error executing {function_name}: {str(e)}"
-
-    def consult_llm(self, messages: List[Dict[str, str]],
-                    tools: Optional[List[Dict[str, Any]]] = None):
-        """Consult the LLM with proper error handling"""
-        try:
-            response = self.client.chat.completions.create(
-                model="meta-llama/Llama-3-70b-chat-hf",  # Updated model name
-                messages=messages,
-                tools=tools if tools else None,
-                tool_choice="auto" if tools else None
-            )
-            return response.choices[0].message
-        except Exception as e:
-            print(f"Error consulting LLM: {str(e)}")
-            return {"content": "I encountered an error processing your request."}
-
-    def get_refined_response(self, user_query: str) -> None | ChatCompletionResponse | Iterator[ChatCompletionChunk]:
-        """Get optimal response with max 5 LLM consultations"""
-        response = None
+    def agent_loop(self, prompt):
         house_info = self.get_house_description()
         messages = [
             {
@@ -71,9 +45,8 @@ class SmartAgent:
                     f"Each device can be turned 'on' or 'off'."
                 )
             },
-            {"role": "user", "content": user_query}
+            {"role": "user", "content": prompt}
         ]
-
         tools = [
             {
                 "type": "function",
@@ -130,41 +103,40 @@ class SmartAgent:
             response = self.client.chat.completions.create(
                 model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
                 messages=messages,
-                tools=tools,
                 tool_choice="auto",
+                tools=tools,
                 temperature=0.1
             )
+            message = response.choices[0].message
 
-        return response
+            if hasattr(message, "tool_calls") and message.tool_calls:
+                for tool_call in message.tool_calls:
+                    args = json.loads(tool_call.function.arguments)
+                    result = self.functions[tool_call.function.name](**args)
+                    content = self.call_mark_down(result, tool_call.function.name)
 
-    def call_function(self, response):
-        message = response.choices[0].message
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": content
+                    })
+                continue
+            else:
+                return message.content
 
-        if not message.tool_calls:
-            return message.content
+        return "Reached max iterations with no final content."
 
-        weather_data, news_data, control_device = None, None, None
-        for tool_call in message.tool_calls:
-            function_name = tool_call.function.name
-            function_args = json.loads(tool_call.function.arguments)
-            result = self.functions[function_name](**function_args)
+    def call_mark_down(self, result, function_name):
+        markdown=''
+        if function_name == "get_weather":
+            markdown=mark_downs.format_weather_En(result)
+        elif function_name == "get_news":
+            markdown=mark_downs.format_news_En(result)
+        elif function_name == "control_device":
+            markdown = result
 
-            if function_name == "get_weather":
-                weather_data = result
-            elif function_name == "get_news":
-                news_data = result
-            elif function_name == "control_device":
-                control_device = result
+        return markdown
 
-        markdown_parts = []
-        if weather_data:
-            markdown_parts.append(mark_downs.format_weather_En(weather_data))
-        if news_data:
-            markdown_parts.append(mark_downs.format_news_En(news_data))
-        if control_device:
-            markdown_parts.append(control_device)
-
-        return "\n\n---\n\n".join(markdown_parts)
 
 
 # Example usage
@@ -173,15 +145,15 @@ if __name__ == "__main__":
 
     # # Test case 1: Weather query
     print("\n=== Weather Test ===")
-    response = agent.get_refined_response("turn on thr lights")
-    print(agent.call_function(response))
+    response = agent.agent_loop("Tell me about both weather and news in Isfahan")
+    print(response)
 
     # Test case 2: News query
     print("\n=== News Test ===")
-    response = agent.get_refined_response("What's the whether in Isfahan?")
-    print(agent.call_function(response))
+    response = agent.agent_loop("What's the whether in Isfahan?")
+    print(response)
 
     # # Test case 3: Combined query
     print("\n=== Combined Test ===")
-    response = agent.get_refined_response("Tell me about both weather and news in Isfahan")
-    print(agent.call_function(response))
+    response = agent.agent_loop("Oh the weather is hot!!")
+    print(response)
