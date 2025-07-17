@@ -1,51 +1,92 @@
 #include <WiFi.h>
-#include <WebServer.h>
 
-const char* ssid = "ESP_AP";
-const char* password = "12345678";
+const char* ssid = "ORANGE";
+const char* password = "09125941742";
 
-WebServer server(80);
+WiFiServer server(80); 
 
-#define BAUD_RATE 9600 
+#define BAUD_RATE 9600
 
 void setup() {
   Serial.begin(BAUD_RATE); 
+  //Serial.print("connecting to ");
+  //Serial.print(ssid);
 
+ WiFi.begin(ssid, password);
+  WiFi.setSleep(false);
 
-  WiFi.softAP(ssid, password);
-  IPAddress IP = WiFi.softAPIP();
-  Serial.println("AP IP address: " + IP.toString());
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    //Serial.print(".");
+  }
+  //Serial.println("");
+  //Serial.println("WiFi connected");
 
-  server.on("/", handleRoot);
+  //Serial.print(WiFi.localIP());
+  //Serial.println(" connect");
+
   server.begin();
-  Serial.println("HTTP server started");
+  //Serial.println("Server started");
 }
 
 void loop() {
-  server.handleClient();
-}
+  WiFiClient client = server.available();  
 
-void handleRoot() {
-  if (server.hasArg("cmd")) {
-    String cmd = server.arg("cmd");
+  if (client) 
+  {
+    //Serial.println("New client connected");
 
-    Serial1.println(cmd);
-    delay(100); 
+    String request = "";
+    while (client.connected()) 
+    {
+      if (client.available()) {
+        char c = client.read();
+        request += c;
 
-    String response = "";
-    unsigned long t0 = millis();
-    while ((millis() - t0) < 2000) { 
-      if (Serial1.available()) {
-        response = Serial1.readStringUntil('\n');
-        break;
+        if (request.endsWith("\r\n\r\n")) break;
       }
     }
 
-    if (response.length() > 0)
-      server.send(200, "text/plain", "Arduino: " + response);
-    else
-      server.send(200, "text/plain", "No response from Arduino.");
-  } else {
-    server.send(400, "text/plain", "Missing 'cmd' parameter.");
+    String cmd = parseCommand(request);
+
+    String response = "3";
+    if (cmd.length() > 0) 
+    {
+      Serial.println(cmd);
+      delay(100);
+
+      unsigned long t0 = millis();
+      while ((millis() - t0) < 2000) {
+        if (Serial.available()) {
+          response = Serial.readStringUntil('\n');
+          break;
+        }
+      }
+    } else {
+      response = "1";
+    }
+
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/plain");
+    client.println("Connection: close");
+    client.println();
+    client.println(response);
+
+    delay(5);
+    client.stop();
+    //Serial.println("Client disconnected");
   }
+}
+
+String parseCommand(String req) {
+  int idx = req.indexOf("GET /?cmd=");
+  if (idx == -1) return "";
+
+  int start = idx + 10;
+  int end = req.indexOf(' ', start);
+  if (end == -1) return "";
+
+  String cmd = req.substring(start, end);
+  cmd.replace("%20", " "); 
+  return cmd;
 }
