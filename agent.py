@@ -20,17 +20,18 @@ class SmartAgent:
             "control_device": tools_API.control_device
         }
         self.house_structure = {
-            "Living Room": ["TV"],
-            "Bathroom": ["lamp"],
-            "Kitchen": ["lamp", "air conditioner"],
-            "Room 1": ["lamp", "air conditioner"],
-            "Room2": ["lamp"]
+            "Living Room": [("TV", 0b0100001)],
+            "Bathroom": [("lamp", 0b0101000)],
+            "Kitchen": [("lamp", 0b0100111), ("air conditioner", 0b0100100)],
+            "Room 1": [("lamp", 0b0100101), ("air conditioner", 0b0100010)],  # servo
+            "Room2": [("lamp", 0b0100110)]
         }
 
     def get_house_description(self) -> str:
         lines = ["This house has the following rooms and devices:"]
         for room, devices in self.house_structure.items():
-            lines.append(f"- {room}: {', '.join(devices)}")
+            device_names = [name for (name, _) in devices]
+            lines.append(f"- {room}: {', '.join(device_names)}")
         return "\n".join(lines)
 
     def set_prompt(self, prompt):
@@ -55,7 +56,6 @@ class SmartAgent:
         return system_prompt
 
     def agent_loop(self, prompt):
-        house_info = self.get_house_description()
         messages = [
             {"role": "system", "content": self.set_prompt(prompt)},
             {"role": "user", "content": prompt}
@@ -160,14 +160,14 @@ if __name__ == "__main__":
     agent = SmartAgent()
 
     # # Test case 1: Weather query
-    print("\n=== Weather Test ===")
-    response = agent.agent_loop("Tell me about both weather Isfahan")
-    print(response)
+    # print("\n=== Weather Test ===")
+    # response = agent.agent_loop("Tell me about both weather and news Isfahan")
+    # print(response)
 
     # Test case 2: News query
-    print("\n=== News Test ===")
-    response = agent.agent_loop("What's the whether in Isfahan?")
-    print(response)
+    # print("\n=== News Test ===")
+    # response = agent.agent_loop("What's the whether in Isfahan?")
+    # print(response)
 
     # # Test case 3: Combined query
     print("\n=== Combined Test ===")
