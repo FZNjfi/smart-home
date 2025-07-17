@@ -4,6 +4,7 @@ import datetime
 
 
 def get_weather(location: str):
+    print("weather")
     open_weather_api_key = "56790bf75f7f78cc009b8f461daa6358"
     url = f"https://api.openweathermap.org/data/2.5/forecast?q={location}&appid={open_weather_api_key}&units=metric"
     try:
@@ -42,6 +43,7 @@ def get_weather(location: str):
 
 
 def get_news(location: str) -> str:
+    print("news")
     # url = "https://newsapi.org/v2/top-headlines"
     # params = {
     #     "country": location,
@@ -69,6 +71,7 @@ def get_news(location: str) -> str:
 
 
 def control_device(devices: List[Dict[str, str]]) -> str:
+    print("house control")
     result = []
     for entry in devices:
         device = entry.get("device")
