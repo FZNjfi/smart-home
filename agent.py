@@ -11,7 +11,7 @@ from together.types.chat_completions import ChatCompletionMessage
 
 class SmartAgent:
     def __init__(self):
-        self.client = Together(api_key="1aff76ce049d22e115f4b8c7eedabcc6bc5e7d082cbbaeb1bbca72f907971234")
+        self.client = Together(api_key="e94227043f583bbf3a480d8dc6017a0a906762fe3daa5a7e3fff1d81b8ac600c")
         self.max_iterations = 2
         self.max_llm_queries = 5
         self.functions = {
@@ -33,18 +33,31 @@ class SmartAgent:
             lines.append(f"- {room}: {', '.join(devices)}")
         return "\n".join(lines)
 
+    def set_prompt(self, prompt):
+        house_info = self.get_house_description()
+        is_farsi = self.is_persian(prompt)
+
+        if is_farsi:
+            system_prompt = (
+                f"تو یک دستیار خانه هوشمند هستی. وقتی لازم بود از ابزار استفاده کن. "
+                f"میتونی چند ابزار رو همزمان استفاده کنی.\n\n"
+                f"{house_info}\n\n"
+                f"هر دستگاه می‌تونه 'روشن' یا 'خاموش' بشه."
+                f"متن جواب کاملا فارسی باشد."
+            )
+        else:
+            system_prompt = (
+                f"You are a smart home assistant. Use tools when needed. "
+                f"You can call multiple tools if required.\n\n"
+                f"{house_info}\n\n"
+                f"Each device can be turned 'on' or 'off'."
+            )
+        return system_prompt
+
     def agent_loop(self, prompt):
         house_info = self.get_house_description()
         messages = [
-            {
-                "role": "system",
-                "content": (
-                    f"You are a smart home assistant. Use tools when needed. "
-                    f"You can call multiple tools if required.\n\n"
-                    f"{house_info}\n\n"
-                    f"Each device can be turned 'on' or 'off'."
-                )
-            },
+            {"role": "system", "content": self.set_prompt(prompt)},
             {"role": "user", "content": prompt}
         ]
         tools = [
@@ -136,6 +149,9 @@ class SmartAgent:
             markdown = result
 
         return markdown
+
+    def is_persian(self, text: str) -> bool:
+        return any('\u0600' <= char <= '\u06FF' for char in text)
 
 
 

@@ -28,10 +28,10 @@ class Speech:
     def audio_record(self):
         recorded_frames = []
         silent_chunks = 0
-        print("start recording...")
         with sd.InputStream(samplerate=self.sample_rate, channels=1, dtype='int16',
                             blocksize=self.frame_size,
                             callback=self.audio_callback):
+            print("start recording...")
             while True:
                 audio_chunk = self.audio_queue.get()
                 raw = audio_chunk.tobytes()
