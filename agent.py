@@ -12,7 +12,7 @@ from together.types.chat_completions import ChatCompletionMessage
 class SmartAgent:
     def __init__(self):
         self.client = Together(api_key="e94227043f583bbf3a480d8dc6017a0a906762fe3daa5a7e3fff1d81b8ac600c")
-        self.max_iterations = 2
+        self.max_iterations = 4
         self.max_llm_queries = 5
         self.functions = {
             "get_weather": tools_API.get_weather,
@@ -65,7 +65,7 @@ class SmartAgent:
                 "type": "function",
                 "function": {
                     "name": "get_weather",
-                    "description": "Call this function ONLY if the user is asking about weather in a specific city or country.",
+                    "description": "Call this function ONLY if the user is asking about weather in a specific city or country. If city or country is in Persian, translate it to English.",
                     "parameters": {
                         "type": "object",
                         "properties": {"location": {"type": "string"}},
@@ -77,7 +77,7 @@ class SmartAgent:
                 "type": "function",
                 "function": {
                     "name": "get_news",
-                    "description": "Call this function ONLY if the user is asking about news in a specific city or country.",
+                    "description": "Call this function ONLY if the user is asking about news in a specific city or country. If city or country is in Persian, translate it to English.",
                     "parameters": {
                         "type": "object",
                         "properties": {"location": {"type": "string"}},
@@ -130,7 +130,7 @@ class SmartAgent:
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
-                        "content": json.dumps(result)
+                        "content": self.call_mark_down(result, tool_call.function.name, self.is_persian(prompt))
                     })
         final_response = self.client.chat.completions.create(
             model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
@@ -139,14 +139,22 @@ class SmartAgent:
         )
         return final_response.choices[0].message.content
 
-    def call_mark_down(self, result, function_name):
+    def call_mark_down(self, result, function_name, is_persian):
         markdown=''
-        if function_name == "get_weather":
-            markdown=mark_downs.format_weather_En(result)
-        elif function_name == "get_news":
-            markdown=mark_downs.format_news_En(result)
-        elif function_name == "control_device":
-            markdown = result
+        if is_persian:
+            if function_name == "get_weather":
+                markdown = mark_downs.format_weather_FA(result)
+            elif function_name == "get_news":
+                markdown = mark_downs.format_news_FA(result)
+            elif function_name == "control_device":
+                markdown = result
+        else:
+            if function_name == "get_weather":
+                markdown=mark_downs.format_weather_En(result)
+            elif function_name == "get_news":
+                markdown=mark_downs.format_news_En(result)
+            elif function_name == "control_device":
+                markdown = result
 
         return markdown
 
@@ -160,9 +168,9 @@ if __name__ == "__main__":
     agent = SmartAgent()
 
     # # Test case 1: Weather query
-    # print("\n=== Weather Test ===")
-    # response = agent.agent_loop("Tell me about both weather and news Isfahan")
-    # print(response)
+    print("\n=== Weather Test ===")
+    response = agent.agent_loop("راجب اخبار و آب و هوای اصفهان بگو و کولر را روشن کن")
+    print(response)
 
     # Test case 2: News query
     # print("\n=== News Test ===")
@@ -170,6 +178,6 @@ if __name__ == "__main__":
     # print(response)
 
     # # Test case 3: Combined query
-    print("\n=== Combined Test ===")
-    response = agent.agent_loop("Oh the weather is hot!!")
-    print(response)
+    # print("\n=== Combined Test ===")
+    # response = agent.agent_loop("Oh the weather is hot!!")
+    # print(response)

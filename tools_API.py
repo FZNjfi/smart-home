@@ -27,7 +27,12 @@ def get_weather(location: str):
             })
             if len(forecasts) >= 3:
                 break
-
+        if not forecasts:
+            return {
+                "location": location,
+                "forecasts": [],
+                "status": "no data available"
+            }
         return {
             "location": location,
             "forecasts": forecasts,
