@@ -117,8 +117,8 @@ class SmartAgent:
             }
 
         ]
-        message=''
-        tool_output=''
+        no_response_count = 0
+        tool_output = ''
         for _ in range(self.max_iterations):
             response = self.client.chat.completions.create(
                 model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
@@ -146,11 +146,18 @@ class SmartAgent:
                         "tool_call_id": tool_call.id,
                         "content": tool_answer
                     })
+
                 messages.append({"role": "assistant", "content": None, "tool_calls": message.tool_calls})
+                no_response_count = 0
                 continue
 
             if message.content:
                 return message.content
+
+            no_response_count += 1
+            if no_response_count >= 2:
+                break
+            messages.append({"role": "assistant", "content": ""})
 
         return tool_output if tool_output else "No answer"
 
@@ -183,7 +190,7 @@ if __name__ == "__main__":
 
     # # Test case 1: Weather query
     print("\n=== Weather Test ===")
-    response = agent.agent_loop("there is too hot")
+    response = agent.agent_loop("How is the weather in Isfahan and news")
     print(response)
 
     # Test case 2: News query

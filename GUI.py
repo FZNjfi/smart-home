@@ -2,7 +2,25 @@ import streamlit as st
 from agent import SmartAgent
 
 st.set_page_config(page_title="Smart Home Assistant", page_icon="🏠", layout="centered")
-smart_home=SmartAgent()
+
+smart_home = SmartAgent()
+
+# مقداردهی اولیه وضعیت‌ها
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "waiting_for_response" not in st.session_state:
+    st.session_state["waiting_for_response"] = False
+
+# اگر در انتظار پاسخ بودیم
+if st.session_state["waiting_for_response"]:
+    last_user_msg = st.session_state.messages[-2][4:].strip()
+    response = smart_home.agent_loop(last_user_msg)
+    st.session_state.messages[-1] = f"Smart Home: {response}"
+    st.session_state["waiting_for_response"] = False
+    st.rerun()
+
+# تم دارک و استایل UI
 st.markdown(
     """
     <style>
@@ -17,7 +35,7 @@ st.markdown(
         background-color: #1e1e1e;
         border-radius: 10px;
         padding: 15px;
-        height: 320px;
+        height: 350px;
         overflow-y: auto;
         box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
         margin-bottom: 15px;
@@ -72,13 +90,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# عنوان و توضیح
 st.title("🏠 Smart Home")
 st.markdown("Hello! I'm your Smart Home Assistant. How can I help you today?")
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# نمایش پیام‌ها با استایل
+# نمایش پیام‌ها
 chat_html = '<div class="chat-box">'
 for msg in st.session_state.messages:
     if msg.startswith("You:"):
@@ -89,22 +105,17 @@ chat_html += "</div>"
 
 st.markdown(chat_html, unsafe_allow_html=True)
 
+# فرم ورودی چت
 with st.form(key="chat_form", clear_on_submit=True):
     cols = st.columns([6, 1, 1])
     user_input = cols[0].text_input("Type your message here...")
-    record_btn = cols[1].form_submit_button("🎙️", help="Record voice")
+    record_btn = cols[1].form_submit_button("🎙️", help="Record voice (coming soon)")
     send_btn = cols[2].form_submit_button("Send")
-
-    if record_btn:
-        st.info("Voice recording feature is not enabled yet, coming soon!")
 
     if send_btn and user_input.strip():
         prompt = user_input.strip()
         st.session_state.messages.append(f"You: {prompt}")
         st.session_state.messages.append("Smart Home: ...typing")
+        st.session_state["waiting_for_response"] = True
+        st.rerun()
 
-    # در حلقه بعدی پیام ...typing رو حذف و پاسخ رو اضافه کن
-    if st.session_state.messages and st.session_state.messages[-1] == "Smart Home: ...typing":
-        prompt = st.session_state.messages[-2][4:].strip()  # پیام کاربر
-        response = smart_home.agent_loop(prompt)
-        st.session_state.messages[-1] = f"Smart Home: {response}"
