@@ -73,8 +73,10 @@ def get_news(location: str) -> str:
         return str(response.status_code)
 
 
-def control_device(devices: List[Dict[str, str]], house_elements: Dict[str, List], is_persian) -> str:
-    code=''
+def control_device(devices: List[Dict[str, str]], house_elements: Dict[str, List]) -> str:
+    code = ''
+    not_found_devices = []
+
     for entry in devices:
         target_device = entry.get("device")
         action = entry.get("action")
@@ -88,20 +90,52 @@ def control_device(devices: List[Dict[str, str]], house_elements: Dict[str, List
             for device_name, device_code in device_list:
                 if device_name.lower() == target_device.lower():
                     device_found = True
-                    code += str(device_code+action_value)
+                    code += str(device_code + action_value)
+
+        if not device_found:
+            not_found_devices.append(target_device)
+
+    if not code:
+        return "No valid devices were found to control."
+
+    response_msg = send_command_to_esp32(code)
+
+    if not_found_devices:
+        not_found_str = ", ".join(not_found_devices)
+        response_msg += f"\nNote: The following devices were not found in the house: {not_found_str}"
+
+    return response_msg
 
 
-
-
-def send_command_to_esp32(device_code):
+def send_command_to_esp32(device_code: str) -> str:
     try:
         esp32_ip = "http://192.168.1.50"
         url = f"{esp32_ip}/control"
-        params = {
-            "cmd": device_code,
-        }
+        params = {"cmd": device_code}
 
         response = requests.get(url, params=params, timeout=20)
-        return response
+
+        if response.status_code == 200:
+            try:
+                code = int(response.text.strip())
+                if code == 2:
+                    return "Command sent successfully and executed."
+                elif code == 3:
+                    return "Command sent, but no response from Arduino."
+                elif code == 4:
+                    return "Command sent, but some instructions failed."
+                else:
+                    return f"Unknown response code from device: {code}"
+            except ValueError:
+                return f"Invalid response format: {response.text}"
+        elif response.status_code == 400:
+            return "Bad request. The URL or parameters may be incorrect."
+        else:
+            return f"Request failed with status code: {response.status_code}"
+
+    except requests.exceptions.Timeout:
+        return "Request timed out. ESP32 may be unreachable."
+    except requests.exceptions.ConnectionError:
+        return "Failed to connect to ESP32. Please check the network."
     except Exception as e:
-        return "Error"
+        return f"An unexpected error occurred: {str(e)}"
