@@ -63,3 +63,10 @@ def format_news_En(news_data: str) -> str:
     return news_text
 
 
+def format_device_control_FA(message):
+    translator = Translator()
+    translated = translator.translate(message, src='en', dest='fa')
+    return translated.text
+
+
+

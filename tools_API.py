@@ -2,6 +2,14 @@ from typing import Dict, Any, List, Optional, Iterator
 import requests
 import datetime
 
+house_structure = {
+            "Living Room": [("TV", 0b0100001)],
+            "Bathroom": [("lamp", 0b0101000)],
+            "Kitchen": [("lamp", 0b0100111), ("air conditioner", 0b0100100)],
+            "Room 1": [("lamp", 0b0100101), ("air conditioner", 0b0100010)],  # servo
+            "Room2": [("lamp", 0b0100110)]
+        }
+
 
 def get_weather(location: str):
     print("weather")
@@ -73,10 +81,9 @@ def get_news(location: str) -> str:
         return str(response.status_code)
 
 
-def control_device(devices: List[Dict[str, str]], house_elements: Dict[str, List]) -> str:
+def control_device(devices: List[Dict[str, str]]) -> str:
     code = ''
     not_found_devices = []
-
     for entry in devices:
         target_device = entry.get("device")
         action = entry.get("action")
@@ -86,18 +93,18 @@ def control_device(devices: List[Dict[str, str]], house_elements: Dict[str, List
             continue
 
         device_found = False
-        for room, device_list in house_elements.items():
+        for room, device_list in house_structure.items():
             for device_name, device_code in device_list:
                 if device_name.lower() == target_device.lower():
                     device_found = True
-                    code += str(device_code + action_value)
+                    code += chr(int(f"{device_code:07b}{action_value:01b}", 2))
 
         if not device_found:
             not_found_devices.append(target_device)
 
     if not code:
         return "No valid devices were found to control."
-
+    print(code)
     response_msg = send_command_to_esp32(code)
 
     if not_found_devices:

@@ -117,7 +117,7 @@ class SmartAgent:
             }
 
         ]
-
+        message=''
         for _ in range(self.max_iterations):
             response = self.client.chat.completions.create(
                 model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
@@ -149,7 +149,7 @@ class SmartAgent:
 
             messages.append({"role": "assistant", "content": message.content})
             return message.content
-        return "no answer"
+        return message.content
 
     def call_mark_down(self, result, function_name, is_persian):
         markdown=''
@@ -159,7 +159,7 @@ class SmartAgent:
             elif function_name == "get_news":
                 markdown = mark_downs.format_news_FA(result)
             elif function_name == "control_device":
-                markdown = result
+                markdown = mark_downs.format_device_control_FA(result)
         else:
             if function_name == "get_weather":
                 markdown=mark_downs.format_weather_En(result)
