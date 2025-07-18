@@ -54,13 +54,12 @@ class SmartAgent:
                 f"You can call multiple tools if required.\n\n"
                 f"{house_info}\n\n"
                 f"Each device can be turned 'on' or 'off'."
-                f"You can use tools as many times as needed, but once you have all the information you need, stop calling tools and provide the final answer."
-                f"You should use data of a tool which you call."
+                f"Use tools ONLY if necessary, and ONLY as much as needed. Once you have information, stop using tools and give a clear final answer."
+                f"If you use any tool, you must use the data it provides directly in your final answer. Do not ignore it."
             )
         return system_prompt
 
     def agent_loop(self, prompt):
-        called_tools = set()
         messages = [
             {"role": "system", "content": self.set_prompt(prompt)},
             {"role": "user", "content": prompt}
@@ -94,7 +93,7 @@ class SmartAgent:
                 "type": "function",
                 "function": {
                     "name": "control_device",
-                    "description": "Use this to turn devices on or off, for multiple devices at once.",
+                    "description": "Use this function to turn devices on or off ONLY in the rooms mentioned by the user.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -103,8 +102,8 @@ class SmartAgent:
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "device": {"type": "string"},
                                         "room": {"type": "string"},
+                                        "device": {"type": "string"},
                                         "action": {"type": "string", "enum": ["on", "off"]}
                                     },
                                     "required": ["device", "action"]
@@ -118,6 +117,7 @@ class SmartAgent:
 
         ]
         message=''
+        tool_output=''
         for _ in range(self.max_iterations):
             response = self.client.chat.completions.create(
                 model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
@@ -131,23 +131,20 @@ class SmartAgent:
             if hasattr(message, "tool_calls") and message.tool_calls:
                 for tool_call in message.tool_calls:
                     args = json.loads(tool_call.function.arguments)
-                    key = (tool_call.function.name, json.dumps(args, sort_keys=True))
-                    if key in called_tools:
-                        continue
-
-                    called_tools.add(key)
+                    print("LLM Tool Arguments:", json.dumps(args, indent=2, ensure_ascii=False))
                     result = self.functions[tool_call.function.name](**args)
+                    tool_answer= self.call_mark_down(result, tool_call.function.name, self.is_persian(prompt))
+                    tool_output+=tool_answer
 
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
-                        "content": self.call_mark_down(result, tool_call.function.name, self.is_persian(prompt))
+                        "content": tool_answer
                     })
-
                 messages.append({"role": "assistant", "content": None, "tool_calls": message.tool_calls})
                 continue
 
-            messages.append({"role": "assistant", "content": message.content})
+            messages.append({"role": "assistant", "content": tool_output})
             return message.content
         return message.content
 
@@ -180,7 +177,7 @@ if __name__ == "__main__":
 
     # # Test case 1: Weather query
     print("\n=== Weather Test ===")
-    response = agent.agent_loop("راجب اخبار و آب و هوای اصفهان بگو و کولر را روشن کن")
+    response = agent.agent_loop("اخبار و آب و هوای اصفهان را بده")
     print(response)
 
     # Test case 2: News query
