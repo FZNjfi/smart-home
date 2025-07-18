@@ -60,6 +60,7 @@ class SmartAgent:
         return system_prompt
 
     def agent_loop(self, prompt):
+        called_tools = set()
         messages = [
             {"role": "system", "content": self.set_prompt(prompt)},
             {"role": "user", "content": prompt}
@@ -131,10 +132,14 @@ class SmartAgent:
             if hasattr(message, "tool_calls") and message.tool_calls:
                 for tool_call in message.tool_calls:
                     args = json.loads(tool_call.function.arguments)
-                    print("LLM Tool Arguments:", json.dumps(args, indent=2, ensure_ascii=False))
+                    key = (tool_call.function.name, json.dumps(args, sort_keys=True))
+                    if key in called_tools:
+                        continue
+
+                    called_tools.add(key)
                     result = self.functions[tool_call.function.name](**args)
-                    tool_answer= self.call_mark_down(result, tool_call.function.name, self.is_persian(prompt))
-                    tool_output+=tool_answer
+                    tool_answer = self.call_mark_down(result, tool_call.function.name, self.is_persian(prompt))
+                    tool_output += tool_answer
 
                     messages.append({
                         "role": "tool",
@@ -144,9 +149,10 @@ class SmartAgent:
                 messages.append({"role": "assistant", "content": None, "tool_calls": message.tool_calls})
                 continue
 
-            messages.append({"role": "assistant", "content": tool_output})
-            return message.content
-        return message.content
+            if message.content:
+                return message.content
+
+        return tool_output if tool_output else "No answer"
 
     def call_mark_down(self, result, function_name, is_persian):
         markdown=''
@@ -177,7 +183,7 @@ if __name__ == "__main__":
 
     # # Test case 1: Weather query
     print("\n=== Weather Test ===")
-    response = agent.agent_loop("اخبار و آب و هوای اصفهان را بده")
+    response = agent.agent_loop("there is too hot")
     print(response)
 
     # Test case 2: News query

@@ -29,7 +29,7 @@ def format_news_FA(news_data: str) -> str:
     news_text = "آخرین عناوین خبری به شرح زیر است:\n"
     for line in lines:
         result = translator.translate(line, src='en', dest='fa')
-        news_text += f"- {result}\n"
+        news_text += f"- {result.text}\n"
     news_text += "این اخبار به‌روز هستند."
     return news_text
 
