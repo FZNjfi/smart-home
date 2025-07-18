@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartHome AI</title>
+  <link href="https://cdn.jsdelivr.net/npm/lucide-static@0.16.0/font/lucide.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="min-h-screen bg-gradient">
+    <!-- Header -->
+    <header class="header">
+      <div class="container">
+        <div class="logo-container">
+          <div class="logo-icon">
+            <i class="lucide lucide-home"></i>
+          </div>
+          <span class="logo-text">SmartHome AI</span>
+        </div>
+        <nav class="nav">
+          <a href="#features" class="nav-link">Features</a>
+          <a href="#dashboard" class="nav-link">Dashboard</a>
+          <a href="#pricing" class="nav-link">Pricing</a>
+          <button class="btn">Get Started</button>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="container text-center">
+        <span class="badge">
+          <i class="lucide lucide-bot"></i>
+          AI-Powered Smart Home
+        </span>
+        <h1 class="hero-title">Your Home, <span class="text-blue">Smarter</span></h1>
+        <p class="hero-description">
+          Experience the future of home automation with our AI assistant. Control everything with your voice, optimize
+          energy usage, and keep your family safe.
+        </p>
+        <div class="hero-buttons">
+          <button class="btn btn-primary">
+            Start Free Trial
+            <i class="lucide lucide-chevron-right"></i>
+          </button>
+          <button class="btn btn-outline">
+            Watch Demo
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-icon">
+              <i class="lucide lucide-users"></i>
+            </div>
+            <div class="stat-value">50K+</div>
+            <div class="stat-label">Active Users</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon">
+              <i class="lucide lucide-home"></i>
+            </div>
+            <div class="stat-value">15K+</div>
+            <div class="stat-label">Smart Homes</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon">
+              <i class="lucide lucide-zap"></i>
+            </div>
+            <div class="stat-value">30%</div>
+            <div class="stat-label">Energy Saved</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon">
+              <i class="lucide lucide-star"></i>
+            </div>
+            <div class="stat-value">4.9/5</div>
+            <div class="stat-label">Rating</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Assistant Chat -->
+    <section id="assistant" class="assistant">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Meet Your AI Assistant</h2>
+          <p class="section-description">
+            Talk to your home naturally. Our AI understands context and learns your preferences.
+          </p>
+        </div>
+
+        <div class="chat-container">
+          <div class="card shadow-lg">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="lucide lucide-bot"></i>
+                AI Home Assistant
+              </h3>
+              <p class="card-subtitle">Always ready to help</p>
+            </div>
+            <div class="card-content">
+              <div class="chat-messages" id="chat-messages">
+                <!-- Messages will be added here by JavaScript -->
+              </div>
+              <div class="chat-input">
+                <div class="input-group">
+                  <input type="text" id="message-input" placeholder="Ask me anything about your home...">
+                  <button id="voice-toggle" class="btn-icon">
+                    <i class="lucide lucide-mic"></i>
+                  </button>
+                  <button id="send-message" class="btn-icon">
+                    <i class="lucide lucide-send"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section id="features" class="features">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Smart Home Features</h2>
+          <p class="section-description">
+            Everything you need to make your home intelligent, secure, and energy-efficient.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="lucide lucide-lightbulb"></i>
+            </div>
+            <h3 class="feature-title">Smart Lighting</h3>
+            <p class="feature-description">Control all lights with voice commands or app</p>
+            <span class="feature-badge">12 devices connected</span>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="lucide lucide-thermometer"></i>
+            </div>
+            <h3 class="feature-title">Climate Control</h3>
+            <p class="feature-description">AI-powered temperature optimization</p>
+            <span class="feature-badge">72°F - Optimal</span>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="lucide lucide-shield"></i>
+            </div>
+            <h3 class="feature-title">Security System</h3>
+            <p class="feature-description">24/7 AI monitoring and alerts</p>
+            <span class="feature-badge">All secure</span>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <i class="lucide lucide-camera"></i>
+            </div>
+            <h3 class="feature-title">Smart Cameras</h3>
+            <p class="feature-description">AI-powered motion detection</p>
+            <span class="feature-badge">8 cameras active</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dashboard Preview -->
+    <section id="dashboard" class="dashboard">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Control Everything</h2>
+          <p class="section-description">
+            Monitor and control your entire home from one beautiful dashboard.
+          </p>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="lucide lucide-smartphone"></i>
+                Quick Controls
+              </h3>
+            </div>
+            <div class="card-content">
+              <div class="control-item">
+                <div class="control-icon">
+                  <i class="lucide lucide-lightbulb text-yellow"></i>
+                  <span>Living Room Lights</span>
+                </div>
+                <div class="control-status">
+                  <span>85%</span>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: 85%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="control-item">
+                <div class="control-icon">
+                  <i class="lucide lucide-thermometer text-blue"></i>
+                  <span>Temperature</span>
+                </div>
+                <span class="font-semibold">72°F</span>
+              </div>
+              <div class="control-item">
+                <div class="control-icon">
+                  <i class="lucide lucide-wifi text-green"></i>
+                  <span>Network Status</span>
+                </div>
+                <span class="badge badge-green">Connected</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-card">
+            <div class="card-header">
+              <h3 class="card-title">
+                <i class="lucide lucide-battery"></i>
+                Energy Usage
+              </h3>
+            </div>
+            <div class="card-content">
+              <div class="energy-usage">
+                <div class="energy-value">-30%</div>
+                <p class="energy-description">vs last month</p>
+                <div class="energy-details">
+                  <div class="energy-item">
+                    <span>Lighting</span>
+                    <span>45%</span>
+                  </div>
+                  <div class="energy-item">
+                    <span>Heating</span>
+                    <span>35%</span>
+                  </div>
+                  <div class="energy-item">
+                    <span>Other</span>
+                    <span>20%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+      <div class="container text-center">
+        <h2 class="cta-title">Ready to Make Your Home Smarter?</h2>
+        <p class="cta-description">
+          Join thousands of families who have transformed their homes with AI-powered automation.
+        </p>
+        <div class="cta-buttons">
+          <button class="btn btn-white">
+            Start Free Trial
+          </button>
+          <button class="btn btn-outline-white">
+            Schedule Demo
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-col">
+            <div class="footer-logo">
+              <div class="logo-icon">
+                <i class="lucide lucide-home"></i>
+              </div>
+              <span class="logo-text">SmartHome AI</span>
+            </div>
+            <p class="footer-text">Making homes smarter, safer, and more efficient with AI technology.</p>
+          </div>
+          <div class="footer-col">
+            <h3 class="footer-title">Product</h3>
+            <ul class="footer-links">
+              <li><a href="#">Features</a></li>
+              <li><a href="#">Pricing</a></li>
+              <li><a href="#">Security</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3 class="footer-title">Support</h3>
+            <ul class="footer-links">
+              <li><a href="#">Help Center</a></li>
+              <li><a href="#">Contact</a></li>
+              <li><a href="#">Installation</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h3 class="footer-title">Company</h3>
+            <ul class="footer-links">
+              <li><a href="#">About</a></li>
+              <li><a href="#">Blog</a></li>
+              <li><a href="#">Careers</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2024 SmartHome AI. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

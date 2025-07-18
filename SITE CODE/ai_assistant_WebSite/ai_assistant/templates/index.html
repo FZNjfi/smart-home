@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant</title>
+    <link rel="stylesheet" href="../static/styles.css">
+    <script src="../static/script.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Browser AI Assistant</h1>
+        
+        <div class="chat-container">
+            <div id="chat-history" class="chat-history"></div>
+            
+            <div class="input-area">
+                <textarea id="text-input" placeholder="Type your message..."></textarea>
+                <button id="send-text">Send Text</button>
+            </div>
+            
+            <div class="voice-controls">
+                <button id="record-voice">Hold to Record</button>
+                <button id="toggle-listen">Enable Wake Word</button>
+                <button id="delete-history">Clear Chat</button>
+            </div>
+            
+            <div class="response-controls">
+                <label>
+                    <input type="checkbox" id="speak-response" checked>
+                    Speak Responses
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
