@@ -1,4 +1,5 @@
 import datetime
+from googletrans import Translator
 
 
 def format_weather_FA(weather_data: dict) -> str:
@@ -20,17 +21,17 @@ def format_weather_FA(weather_data: dict) -> str:
     return result
 
 
-
 def format_news_FA(news_data: str) -> str:
     if not news_data or "Request failed" in news_data or news_data.strip() == "No news found.":
         return "در حال حاضر خبری در دسترس نیست."
     lines = news_data.strip().split("\n")
+    translator = Translator()
     news_text = "آخرین عناوین خبری به شرح زیر است:\n"
     for line in lines:
-        news_text += f"- {line}\n"
+        result = translator.translate(line, src='en', dest='fa')
+        news_text += f"- {result}\n"
     news_text += "این اخبار به‌روز هستند."
     return news_text
-
 
 
 def format_weather_En(weather_data: dict) -> str:

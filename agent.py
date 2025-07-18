@@ -41,10 +41,12 @@ class SmartAgent:
         if is_farsi:
             system_prompt = (
                 f"تو یک دستیار خانه هوشمند هستی. وقتی لازم بود از ابزار استفاده کن. "
-                f"میتونی چند ابزار رو همزمان استفاده کنی.\n\n"
+                f" میتونی چند ابزار رو همزمان استفاده کنی.\n\n"
                 f"{house_info}\n\n"
-                f"هر دستگاه می‌تونه 'روشن' یا 'خاموش' بشه."
-                f"متن جواب کاملا فارسی باشد."
+                f"\nهر دستگاه می‌تونه 'روشن' یا 'خاموش' بشه."
+                f"متن جواب کاملا فارسی باشد.\n"
+                f"\nاگر دیگر نیازی به ابزار نبود جواب نهایی را بگردان و ابزاری صدا نزن."
+                f"باید از داده های آن ابزار که صدا زدی در متن استفاده کنی."
             )
         else:
             system_prompt = (
@@ -52,10 +54,13 @@ class SmartAgent:
                 f"You can call multiple tools if required.\n\n"
                 f"{house_info}\n\n"
                 f"Each device can be turned 'on' or 'off'."
+                f"You can use tools as many times as needed, but once you have all the information you need, stop calling tools and provide the final answer."
+                f"You should use data of a tool which you call."
             )
         return system_prompt
 
     def agent_loop(self, prompt):
+        called_tools = set()
         messages = [
             {"role": "system", "content": self.set_prompt(prompt)},
             {"role": "user", "content": prompt}
@@ -99,6 +104,7 @@ class SmartAgent:
                                     "type": "object",
                                     "properties": {
                                         "device": {"type": "string"},
+                                        "room": {"type": "string"},
                                         "action": {"type": "string", "enum": ["on", "off"]}
                                     },
                                     "required": ["device", "action"]
@@ -125,6 +131,11 @@ class SmartAgent:
             if hasattr(message, "tool_calls") and message.tool_calls:
                 for tool_call in message.tool_calls:
                     args = json.loads(tool_call.function.arguments)
+                    key = (tool_call.function.name, json.dumps(args, sort_keys=True))
+                    if key in called_tools:
+                        continue
+
+                    called_tools.add(key)
                     result = self.functions[tool_call.function.name](**args)
 
                     messages.append({
@@ -132,12 +143,13 @@ class SmartAgent:
                         "tool_call_id": tool_call.id,
                         "content": self.call_mark_down(result, tool_call.function.name, self.is_persian(prompt))
                     })
-        final_response = self.client.chat.completions.create(
-            model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
-            messages=messages,
-            temperature=0.1
-        )
-        return final_response.choices[0].message.content
+
+                messages.append({"role": "assistant", "content": None, "tool_calls": message.tool_calls})
+                continue
+
+            messages.append({"role": "assistant", "content": message.content})
+            return message.content
+        return "no answer"
 
     def call_mark_down(self, result, function_name, is_persian):
         markdown=''
@@ -160,7 +172,6 @@ class SmartAgent:
 
     def is_persian(self, text: str) -> bool:
         return any('\u0600' <= char <= '\u06FF' for char in text)
-
 
 
 # Example usage

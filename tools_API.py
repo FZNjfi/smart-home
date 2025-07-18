@@ -73,14 +73,35 @@ def get_news(location: str) -> str:
         return str(response.status_code)
 
 
-
-
-def control_device(devices: List[Dict[str, str]]) -> str:
-    print("house control")
-    result = []
+def control_device(devices: List[Dict[str, str]], house_elements: Dict[str, List], is_persian) -> str:
+    code=''
     for entry in devices:
-        device = entry.get("device")
+        target_device = entry.get("device")
         action = entry.get("action")
-        if device and action:
-            result.append(f"")
-    return "\n".join(result) if result else "هیچ دستگاهی تنظیم نشد."
+        action_value = 0b1 if action == "on" else 0b0
+
+        if not target_device or not action:
+            continue
+
+        device_found = False
+        for room, device_list in house_elements.items():
+            for device_name, device_code in device_list:
+                if device_name.lower() == target_device.lower():
+                    device_found = True
+                    code += str(device_code+action_value)
+
+
+
+
+def send_command_to_esp32(device_code):
+    try:
+        esp32_ip = "http://192.168.1.50"
+        url = f"{esp32_ip}/control"
+        params = {
+            "cmd": device_code,
+        }
+
+        response = requests.get(url, params=params, timeout=20)
+        return response
+    except Exception as e:
+        return "Error"
