@@ -85,6 +85,7 @@ def control_device(devices: List[Dict[str, str]]) -> str:
     code = ''
     not_found_devices = []
     for entry in devices:
+        target_room = entry.get("room")
         target_device = entry.get("device")
         action = entry.get("action")
         action_value = 0b1 if action == "on" else 0b0
@@ -94,6 +95,9 @@ def control_device(devices: List[Dict[str, str]]) -> str:
 
         device_found = False
         for room, device_list in house_structure.items():
+            if room.lower() != target_room.lower():
+                continue
+
             for device_name, device_code in device_list:
                 if device_name.lower() == target_device.lower():
                     device_found = True
